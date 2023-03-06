@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('data_dir', type=str, help='where the flower images are stored')
 parser.add_argument('--gpu', action='store_true', help='gpu is disabled by default')
 parser.add_argument('--save_dir', type = str, default='checkpoint.pth', help='default save dir path is checkpoint.pth')
-parser.add_argument('--arch', type = str, default='vgg19', help="Models supports: VGG, densenet", choices=('vgg19', 'vgg16', 'densenet121'))
+parser.add_argument('--arch', type = str, default='vgg', help="Models supports: VGG, densenet", choices=('vgg' 'densenet'))
 parser.add_argument('--learning_rate', type = float, default=0.0025, help='default learning rate is 0.0025')
 parser.add_argument('--hidden_units1', type = int, default=4096, help = 'default hidden layer1 is 4096')
 parser.add_argument('--hidden_units2', type = int, default=256,help = 'default hidden layer1 is 4096')
@@ -48,9 +48,23 @@ testloaders = torch.utils.data.DataLoader(test_datasets, batch_size = 64, shuffl
 validloaders = torch.utils.data.DataLoader(valid_datasets, batch_size =64, shuffle = True)
 
 #creating a model
-model = getattr(models, args.arch)(pretrained =True)
-
-model.classifier = nn.Sequential(nn.Linear(25088, args.hidden_units1),
+if args.arch == "vgg":    
+    model = getattr(models, args.arch)(pretrained =True)
+    for param in model.parameters():
+        param.requires_grad = False
+    model.classifier = nn.Sequential(nn.Linear(25088, args.hidden_units1),
+                        nn.ReLU(),
+                        nn.Dropout(p=0.2),
+                        nn.Linear(args.hidden_units1, args.hidden_units2),
+                        nn.ReLU(),
+                        nn.Dropout(p=0.2),
+                        nn.Linear(args.hidden_units2, 102),
+                        nn.LogSoftmax(dim=1))
+elif args.arch == "densenet":
+    model = getattr(models, args.arch)(pretrained =True)
+    for param in model.parameters():
+        param.requires_grad = False
+    model.classifier = nn.Sequential(nn.Linear(1024, args.hidden_units1),
                         nn.ReLU(),
                         nn.Dropout(p=0.2),
                         nn.Linear(args.hidden_units1, args.hidden_units2),
@@ -59,6 +73,7 @@ model.classifier = nn.Sequential(nn.Linear(25088, args.hidden_units1),
                         nn.Linear(args.hidden_units2, 102),
                         nn.LogSoftmax(dim=1))
 
+    
 #checking the device is in cpu or gpu
 device = torch.device("cuda" if (torch.cuda.is_available() and args.gpu) else "cpu")
 

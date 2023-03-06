@@ -1,8 +1,6 @@
 import torch
-from torch import nn, optim
 import torch.nn.functional as F
-from torchvision import models, datasets, transforms
-from torchvision.datasets import ImageFolder
+from torchvision import models,  transforms
 import argparse
 from PIL import Image
 import numpy as np
@@ -15,12 +13,8 @@ parser.add_argument('--gpu', action='store_true', help='gpu is disabled by defau
 parser.add_argument('image_path', type=str, help='to pass the image path')
 parser.add_argument('checkpoint', type=str, help='pass the model save file .pth')
 parser.add_argument('--topk', type = int, default=5)
-parser.add_argument('--category_names', type=str)
+parser.add_argument('--category_names', default='cat_to_name.json', help='its a json file contains the category name')
 args = parser.parse_args()
-
-#reading flowers.json and storing in a list
-with open('cat_to_name.json', 'r') as f:
-    cat_to_name = json.load(f)
     
 #checking the device is in cpu or gpu
 device = torch.device("cuda" if (torch.cuda.is_available() and args.gpu) else "cpu")
@@ -123,7 +117,8 @@ def predict(image_path, model, topk=5):
     
 image_path = args.image_path
 filepath = args.checkpoint
-
+with open(args.category_names, 'r') as f:
+    cat_to_name = json.load(f)
 
 top_k, top_class = predict(image_path, filepath, args.topk)
 
